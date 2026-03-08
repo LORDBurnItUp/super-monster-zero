@@ -1,0 +1,124 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: Skip tests and force deploy
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  # ── Test ─────────────────────────────────────────────────────────────────
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check server syntax
+        run: node --check server.js
+
+  # ── Deploy to Hostinger ───────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Hostinger
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: always() && (needs.test.result == 'success' || inputs.skip_tests)
+    environment:
+      name: production
+      url: ${{ secrets.HOSTINGER_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.HOSTINGER_SSH_KEY }}
+
+      - name: Add Hostinger to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy files via rsync
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='logs' \
+            --exclude='*.log' \
+            ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:~/super-monster-zero/
+
+      - name: Install deps on server & restart PM2
+        run: |
+          ssh ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} << 'EOF'
+            set -e
+            cd ~/super-monster-zero
+
+            # Install production deps
+            npm ci --omit=dev
+
+            # Create logs dir
+            mkdir -p logs
+
+            # Create .env if it doesn't exist
+            if [ ! -f .env ]; then
+              cp .env.example .env
+              echo "WARN: .env created from template — update secrets on server!"
+            fi
+
+            # PM2: reload (zero-downtime) or start fresh
+            if pm2 list | grep -q 'super-monster-zero'; then
+              pm2 reload ecosystem.config.js --env production
+            else
+              pm2 start ecosystem.config.js --env production
+            fi
+
+            pm2 save
+            echo "Deploy complete!"
+          EOF
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          curl -sf https://${{ secrets.HOSTINGER_DOMAIN }}/api/health || \
+          echo "Health check failed — check server logs"
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: Hostinger Business Plan" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ secrets.HOSTINGER_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

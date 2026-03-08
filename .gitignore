@@ -1,0 +1,15 @@
+node_modules/
+.env
+logs/
+*.log
+.DS_Store
+Thumbs.db
+npm-debug.log*
+.npm
+.node_repl_history
+.nyc_output
+coverage/
+dist/
+build/
+.vercel
+.cache

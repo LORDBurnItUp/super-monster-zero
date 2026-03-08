@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Monster Zero — Access</title>
+  <style>
+    :root {
+      --bg: #020409;
+      --surface: rgba(10, 20, 40, 0.8);
+      --border: rgba(0, 240, 255, 0.15);
+      --accent: #00f0ff;
+      --accent2: #7b2fff;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --danger: #ff3366;
+      --green: #00ff88;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridScroll 20s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes gridScroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(50px); }
+    }
+
+    /* Glowing orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    .orb-1 { width: 400px; height: 400px; background: var(--accent2); top: -100px; left: -100px; animation: float1 8s ease-in-out infinite; }
+    .orb-2 { width: 300px; height: 300px; background: var(--accent); bottom: -50px; right: -50px; animation: float2 10s ease-in-out infinite; }
+    @keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(40px,40px); } }
+    @keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-30px,-30px); } }
+
+    .login-card {
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 420px;
+      max-width: 95vw;
+      position: relative;
+      box-shadow: 0 0 60px rgba(0, 240, 255, 0.05), 0 0 120px rgba(123, 47, 255, 0.05);
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(0,240,255,0.3), transparent, rgba(123,47,255,0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 30px rgba(0,240,255,0.4); }
+      50% { box-shadow: 0 0 60px rgba(0,240,255,0.6), 0 0 100px rgba(123,47,255,0.3); }
+    }
+
+    .logo h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo p {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 255, 136, 0.05);
+      border: 1px solid rgba(0, 255, 136, 0.15);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 28px;
+      font-size: 11px;
+      color: var(--green);
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+      margin-top: 4px;
+    }
+
+    .btn:hover { opacity: 0.9; box-shadow: 0 0 30px rgba(0, 240, 255, 0.3); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error {
+      background: rgba(255, 51, 102, 0.1);
+      border: 1px solid rgba(255, 51, 102, 0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--danger);
+      margin-top: 12px;
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .typing {
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid var(--accent);
+      animation: typing 3s steps(40) 0.5s both, blink-cursor 0.75s step-end infinite;
+    }
+
+    @keyframes typing { from { width: 0; } to { width: 100%; } }
+    @keyframes blink-cursor { 0%,100%{border-color:var(--accent)} 50%{border-color:transparent} }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="login-card">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <h1>Super Monster Zero</h1>
+      <p>Supreme Commander Access</p>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span>SYSTEM ONLINE — AWAITING COMMANDER AUTHENTICATION</span>
+    </div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label>Commander Password</label>
+        <input type="password" id="password" placeholder="Enter access code..." autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn" id="submitBtn">
+        AUTHENTICATE &amp; ENTER
+      </button>
+      <div class="error" id="errorMsg"></div>
+    </form>
+
+    <div class="footer">
+      SUPER MONSTER ZERO v1.0 &nbsp;|&nbsp; EXECUTE WITHOUT FEAR
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const err = document.getElementById('errorMsg');
+      const pw = document.getElementById('password').value;
+
+      btn.disabled = true;
+      btn.textContent = 'AUTHENTICATING...';
+      err.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          btn.textContent = 'ACCESS GRANTED — ENTERING...';
+          setTimeout(() => window.location.href = '/', 500);
+        } else {
+          err.textContent = 'ACCESS DENIED. Incorrect password.';
+          err.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'AUTHENTICATE & ENTER';
+        }
+      } catch (e) {
+        err.textContent = 'Connection error. Server may be starting.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'AUTHENTICATE & ENTER';
+      }
+    });
+  </script>
+</body>
+</html>

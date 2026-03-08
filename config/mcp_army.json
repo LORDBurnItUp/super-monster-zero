@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "brave-search": { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-brave-search"], "env": { "BRAVE_API_KEY": "" } },
+    "github":       { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"], "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "" } },
+    "filesystem":   { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "./"] },
+    "slack":        { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-slack"], "env": { "SLACK_BOT_TOKEN": "", "SLACK_TEAM_ID": "" } },
+    "airtable":     { "type": "stdio", "command": "npx", "args": ["-y", "airtable-mcp-server"], "env": { "AIRTABLE_API_KEY": "" } },
+    "firecrawl":    { "type": "stdio", "command": "npx", "args": ["-y", "firecrawl-mcp"], "env": { "FIRECRAWL_API_KEY": "" } },
+    "context7":     { "type": "sse",   "url": "https://mcp.context7.com/mcp" },
+    "websearch-exa":{ "type": "sse",   "url": "https://mcp.exa.ai/mcp?tools=web_search_exa", "headers": { "x-api-key": "" } },
+    "grep-app":     { "type": "sse",   "url": "https://grep.app/mcp" },
+    "puppeteer":    { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-puppeteer"] },
+    "postgres":     { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-postgres", ""] },
+    "memory":       { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-memory"] },
+    "sequential-thinking": { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"] },
+    "fetch":        { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-fetch"] },
+    "sqlite":       { "type": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-sqlite"] }
+  }
+}

@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Monster Zero — Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Root ─────────────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:         #020409;
+      --bg-2:       #060d1a;
+      --surface:    rgba(6, 20, 45, 0.75);
+      --surface-2:  rgba(10, 30, 60, 0.6);
+      --border:     rgba(0, 240, 255, 0.12);
+      --border-h:   rgba(0, 240, 255, 0.35);
+      --accent:     #00f0ff;
+      --accent-dim: rgba(0, 240, 255, 0.15);
+      --purple:     #7b2fff;
+      --purple-dim: rgba(123, 47, 255, 0.15);
+      --green:      #00ff88;
+      --green-dim:  rgba(0, 255, 136, 0.12);
+      --red:        #ff3366;
+      --red-dim:    rgba(255, 51, 102, 0.12);
+      --yellow:     #ffcc00;
+      --text:       #dde8f5;
+      --text-2:     #7a9bbf;
+      --text-3:     #3a5a7a;
+      --sidebar-w:  220px;
+      --nav-h:      56px;
+      --radius:     10px;
+      --transition: 200ms ease;
+      --glow-sm:    0 0 10px rgba(0, 240, 255, 0.4);
+      --glow-md:    0 0 20px rgba(0, 240, 255, 0.3), 0 0 40px rgba(0, 240, 255, 0.1);
+      --glow-lg:    0 0 40px rgba(0, 240, 255, 0.2), 0 0 80px rgba(123, 47, 255, 0.15);
+    }
+
+    html { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ──────────────────────────────────────────── */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,240,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,240,255,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridDrift 30s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-scanlines {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.05) 2px,
+        rgba(0, 0, 0, 0.05) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-orb-1 { width: 600px; height: 600px; background: var(--purple); opacity: 0.06; top: -200px; left: -150px; animation: orbFloat1 15s ease-in-out infinite; }
+    .bg-orb-2 { width: 500px; height: 500px; background: var(--accent); opacity: 0.05; bottom: -100px; right: -100px; animation: orbFloat2 18s ease-in-out infinite; }
+
+    @keyframes gridDrift { from { transform: translateY(0); } to { transform: translateY(40px); } }
+    @keyframes orbFloat1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(60px,60px)} }
+    @keyframes orbFloat2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-50px,-40px)} }
+
+    /* ── Layout shell ─────────────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 1; }
+
+    /* ── Top Navbar ───────────────────────────────────────────────────── */
+    .navbar {
+      height: var(--nav-h);
+      background: rgba(2, 8, 20, 0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--glow-sm);
+      flex-shrink: 0;
+    }
+
+    .nav-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    .nav-title span { color: var(--accent); }
+
+    .nav-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-2);
+    }
+
+    .nav-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      animation: pulseDot 1.8s ease-in-out infinite;
+    }
+
+    .pulse-dot.red { background: var(--red); }
+    .pulse-dot.yellow { background: var(--yellow); }
+    @keyframes pulseDot { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.4; transform:scale(0.8)} }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 14px;
+      color: var(--text-2);
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-decoration: none;
+    }
+
+    .nav-btn:hover {
+      border-color: var(--border-h);
+      color: var(--text);
+      background: var(--accent-dim);
+    }
+
+    .nav-btn.danger:hover {
+      border-color: var(--red);
+      color: var(--red);
+      background: var(--red-dim);
+    }
+
+    /* ── Body area (sidebar + main) ───────────────────────────────────── */
+    .body-area {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: rgba(2, 8, 18, 0.85);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+      padding: 16px 10px;
+    }
+
+    .sidebar-section {
+      margin-bottom: 8px;
+    }
+
+    .sidebar-label {
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 0 10px;
+      margin-bottom: 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all var(--transition);
+      text-decoration: none;
+      font-size: 12px;
+      border: 1px solid transparent;
+      margin-bottom: 2px;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: var(--border);
+    }
+
+    .nav-item.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: rgba(0, 240, 255, 0.25);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 60%;
+      background: var(--accent);
+      border-radius: 2px;
+      box-shadow: var(--glow-sm);
+    }
+
+    .nav-item svg { flex-shrink: 0; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 1px 7px;
+      font-size: 10px;
+    }
+
+    .sidebar-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 10px 8px;
+    }
+
+    /* ── Main content ─────────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* ── Page header ──────────────────────────────────────────────────── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .page-header h1 {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-header p {
+      font-size: 11px;
+      color: var(--text-2);
+      margin-top: 2px;
+    }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    /* ── Glass card base ──────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(0,240,255,0.12), transparent 50%, rgba(123,47,255,0.08));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* ── Stat cards row ───────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .stat-card {
+      padding: 18px 20px;
+      transition: all var(--transition);
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-h);
+      transform: translateY(-2px);
+      box-shadow: var(--glow-lg);
+    }
+
+    .stat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.accent { background: var(--accent-dim); color: var(--accent); }
+    .stat-icon.purple { background: var(--purple-dim); color: var(--purple); }
+    .stat-icon.green  { background: var(--green-dim); color: var(--green); }
+    .stat-icon.yellow { background: rgba(255,204,0,0.1); color: var(--yellow); }
+
+    .stat-trend {
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .stat-trend.up { color: var(--green); }
+    .stat-trend.neutral { color: var(--text-2); }
+
+    .stat-value {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── Middle row ───────────────────────────────────────────────────── */
+    .mid-row {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 14px;
+    }
+
+    /* ── Agent army grid ──────────────────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title span.tag {
+      font-family: 'Fira Code', monospace;
+      font-size: 10px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(0,240,255,0.2);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 1px 8px;
+      letter-spacing: 1px;
+    }
+
+    .army-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+    }
+
+    .agent-card {
+      background: var(--bg-2);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(0,240,255,0.03));
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .agent-card:hover::before { opacity: 1; }
+    .agent-card:hover { background: rgba(0, 240, 255, 0.04); }
+
+    .agent-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+    }
+
+    .agent-info { flex: 1; min-width: 0; }
+
+    .agent-name {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .agent-role {
+      font-size: 10px;
+      color: var(--text-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .agent-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .agent-status.ready   { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulseDot 2s ease-in-out infinite; }
+    .agent-status.standby { background: var(--yellow); }
+    .agent-status.offline { background: var(--red-dim); }
+
+    /* ── Activity log ─────────────────────────────────────────────────── */
+    .log-body {
+      padding: 0 4px 12px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .log-body::-webkit-scrollbar { width: 4px; }
+    .log-body::-webkit-scrollbar-track { background: transparent; }
+    .log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 6px;
+      transition: background var(--transition);
+      font-size: 11px;
+    }
+
+    .log-entry:hover { background: rgba(0,240,255,0.03); }
+
+    .log-time {
+      color: var(--text-3);
+      white-space: nowrap;
+      font-size: 10px;
+      padding-top: 1px;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .log-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .log-indicator.info    { background: var(--accent); }
+    .log-indicator.success { background: var(--green); }
+    .log-indicator.warn    { background: var(--yellow); }
+    .log-indicator.error   { background: var(--red); }
+
+    .log-text { color: var(--text-2); flex: 1; }
+    .log-text strong { color: var(--text); font-weight: 500; }
+
+    /* ── Bottom row ───────────────────────────────────────────────────── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 14px;
+    }
+
+    /* ── MCP server grid ──────────────────────────────────────────────── */
+    .mcp-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 16px;
+    }
+
+    .mcp-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .mcp-chip:hover {
+      border-color: var(--border-h);
+      background: var(--accent-dim);
+    }
+
+    .mcp-chip-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: var(--accent-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .mcp-chip-name {
+      font-size: 10px;
+      color: var(--text-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Quick command bar ────────────────────────────────────────────── */
+    .cmd-bar {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: rgba(2, 8, 18, 0.9);
+      backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .cmd-prefix {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    .cmd-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      caret-color: var(--accent);
+    }
+
+    .cmd-input::placeholder { color: var(--text-3); }
+
+    .cmd-hint {
+      font-size: 10px;
+      color: var(--text-3);
+    }
+
+    .cmd-btn {
+      background: var(--accent-dim);
+      border: 1px solid rgba(0,240,255,0.25);
+      border-radius: 6px;
+      padding: 6px 14px;
+      color: var(--accent);
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .cmd-btn:hover {
+      background: var(--accent);
+      color: #000;
+      box-shadow: var(--glow-sm);
+    }
+
+    /* ── Mini sys stats card ──────────────────────────────────────────── */
+    .sys-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .sys-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sys-row:last-child { border-bottom: none; }
+
+    .sys-label {
+      font-size: 10px;
+      color: var(--text-2);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      width: 80px;
+      flex-shrink: 0;
+    }
+
+    .sys-bar-wrap { flex: 1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 4px; }
+
+    .sys-bar {
+      height: 4px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      transition: width 1s ease;
+    }
+
+    .sys-val {
+      font-size: 11px;
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      width: 36px;
+      text-align: right;
+    }
+
+    /* ── Scrollbar global ─────────────────────────────────────────────── */
+    .content::-webkit-scrollbar, .sidebar::-webkit-scrollbar { width: 4px; }
+    .content::-webkit-scrollbar-track, .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb, .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── Glitch animation for logo ────────────────────────────────────── */
+    @keyframes glitch {
+      0%,100%{clip-path:none;transform:none}
+      5%{clip-path:inset(30% 0 50% 0);transform:translate(-2px,1px)}
+      10%{clip-path:inset(10% 0 80% 0);transform:translate(1px,-1px)}
+      15%{clip-path:none;transform:none}
+    }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .mid-row, .bottom-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .army-grid { grid-template-columns: 1fr; }
+      .mcp-grid { grid-template-columns: repeat(2,1fr); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-scanlines" aria-hidden="true"></div>
+<div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+<div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+
+<div class="app">
+
+  <!-- ── Navbar ─────────────────────────────────────────────────────── -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="nav-brand">
+      <div class="nav-logo" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+      <span class="nav-title">SUPER <span>MONSTER</span> ZERO</span>
+    </div>
+
+    <div class="nav-center">
+      <div class="nav-pill">
+        <div class="pulse-dot" id="sysStatusDot"></div>
+        <span id="sysStatusText">SYSTEM ONLINE</span>
+      </div>
+      <div class="nav-pill">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="uptimeDisplay">--:--:--</span>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <a href="/api/health" target="_blank" class="nav-btn" aria-label="View API health">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        API
+      </a>
+      <button class="nav-btn" id="refreshBtn" aria-label="Refresh dashboard">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+      <button class="nav-btn danger" id="logoutBtn" aria-label="Logout">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Logout
+      </button>
+    </div>
+  </nav>
+
+  <div class="body-area">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────── -->
+    <aside class="sidebar" role="complementary" aria-label="Sidebar navigation">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Command</div>
+        <a href="#" class="nav-item active" data-view="dashboard" aria-current="page">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="/agent" class="nav-item" target="_blank">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M1.05 12H7m10 0h5.95M12 1.05V7m0 10v5.95"/></svg>
+          Agent Zero
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto;opacity:0.4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="#" class="nav-item" data-view="mcp">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          MCP Army
+          <span class="nav-badge" id="mcpCount">15</span>
+        </a>
+        <a href="#" class="nav-item" data-view="voice">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          Voice
+        </a>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Intelligence</div>
+        <a href="#" class="nav-item" data-view="memory">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Memory
+          <span class="nav-badge" id="memCount">—</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+          Army Control
+        </a>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Operations</div>
+        <a href="#" class="nav-item">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Deploy
+        </a>
+        <a href="#" class="nav-item">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Notifications
+        </a>
+        <a href="#" class="nav-item">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M22 12h-2"/><path d="M4 12H2"/><path d="M12 22v-2"/><path d="M12 4V2"/></svg>
+          Settings
+        </a>
+      </div>
+    </aside>
+
+    <!-- ── Main ─────────────────────────────────────────────────────── -->
+    <main class="main" role="main">
+      <div class="content">
+
+        <!-- Page header -->
+        <div class="page-header">
+          <div>
+            <h1>COMMAND CENTER</h1>
+            <p id="dateDisplay">Loading...</p>
+          </div>
+          <div class="header-actions">
+            <button class="nav-btn" id="deployBtn" style="border-color:rgba(0,255,136,0.3);color:var(--green);" aria-label="Quick deploy">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Quick Deploy
+            </button>
+            <button class="nav-btn" style="border-color:rgba(123,47,255,0.3);color:var(--purple);" aria-label="Spawn agent">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              Spawn Agent
+            </button>
+          </div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="stats-grid" role="region" aria-label="System statistics">
+
+          <div class="card stat-card">
+            <div class="stat-top">
+              <div class="stat-icon accent">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M1.05 12H7m10 0h5.95M12 1.05V7m0 10v5.95"/></svg>
+              </div>
+              <div class="stat-trend up">
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+                <span id="agentTrend">Active</span>
+              </div>
+            </div>
+            <div class="stat-value" id="activeAgents">0</div>
+            <div class="stat-label">Active Agents</div>
+          </div>
+
+          <div class="card stat-card">
+            <div class="stat-top">
+              <div class="stat-icon purple">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div class="stat-trend up">
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+                Online
+              </div>
+            </div>
+            <div class="stat-value" id="mcpServers">15</div>
+            <div class="stat-label">MCP Servers</div>
+          </div>
+
+          <div class="card stat-card">
+            <div class="stat-top">
+              <div class="stat-icon green">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              </div>
+              <div class="stat-trend neutral">
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Indexed
+              </div>
+            </div>
+            <div class="stat-value" id="memoryItems">—</div>
+            <div class="stat-label">Memory Items</div>
+          </div>
+
+          <div class="card stat-card">
+            <div class="stat-top">
+              <div class="stat-icon yellow">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="stat-trend up">
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+                Running
+              </div>
+            </div>
+            <div class="stat-value" id="uptimeStat">—</div>
+            <div class="stat-label">Uptime</div>
+          </div>
+
+        </div>
+
+        <!-- Mid row: Army + Log -->
+        <div class="mid-row">
+
+          <!-- Agent Army -->
+          <div class="card" role="region" aria-label="Agent army">
+            <div class="section-header">
+              <div class="section-title">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                AGENT ARMY
+                <span class="tag">8 SPECIALISTS</span>
+              </div>
+              <button class="nav-btn" style="font-size:10px;padding:4px 10px;" aria-label="Deploy all agents">Deploy All</button>
+            </div>
+            <div class="army-grid" id="armyGrid" role="list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Activity Log -->
+          <div class="card" role="region" aria-label="Activity log">
+            <div class="section-header">
+              <div class="section-title">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                ACTIVITY
+              </div>
+              <button class="nav-btn" style="font-size:10px;padding:4px 10px;" id="clearLogBtn" aria-label="Clear activity log">Clear</button>
+            </div>
+            <div class="log-body" id="activityLog" aria-live="polite">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom row: MCP Army + Sys Stats -->
+        <div class="bottom-row">
+
+          <!-- MCP Server Grid -->
+          <div class="card" role="region" aria-label="MCP server army">
+            <div class="section-header">
+              <div class="section-title">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+                MCP ARMY
+                <span class="tag" id="mcpLabel">15 ONLINE</span>
+              </div>
+            </div>
+            <div class="mcp-grid" id="mcpGrid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- System Health -->
+          <div class="card" role="region" aria-label="System health">
+            <div class="section-header">
+              <div class="section-title">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                SYS HEALTH
+              </div>
+            </div>
+            <div class="sys-grid">
+              <div class="sys-row">
+                <span class="sys-label">CPU</span>
+                <div class="sys-bar-wrap" role="progressbar" aria-label="CPU usage"><div class="sys-bar" id="cpuBar" style="width:0%"></div></div>
+                <span class="sys-val" id="cpuVal">—</span>
+              </div>
+              <div class="sys-row">
+                <span class="sys-label">Memory</span>
+                <div class="sys-bar-wrap" role="progressbar" aria-label="Memory usage"><div class="sys-bar" id="memBar" style="width:0%;background:linear-gradient(90deg,var(--purple),var(--accent))"></div></div>
+                <span class="sys-val" id="memVal">—</span>
+              </div>
+              <div class="sys-row">
+                <span class="sys-label">Node.js</span>
+                <div class="sys-bar-wrap"><div class="sys-bar" id="nodeBar" style="width:100%;background:linear-gradient(90deg,var(--green),var(--accent))"></div></div>
+                <span class="sys-val" id="nodeVal" style="color:var(--green);font-size:9px">v22</span>
+              </div>
+              <div class="sys-row">
+                <span class="sys-label">Agent Zero</span>
+                <div class="sys-bar-wrap"><div class="sys-bar" id="a0Bar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--purple))"></div></div>
+                <span class="sys-val" id="a0Val">—</span>
+              </div>
+              <div class="sys-row">
+                <span class="sys-label">WS Relay</span>
+                <div class="sys-bar-wrap"><div class="sys-bar" id="wsBar" style="width:100%;background:linear-gradient(90deg,var(--green),var(--accent))"></div></div>
+                <span class="sys-val" style="color:var(--green);font-size:9px" id="wsVal">UP</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Quick command bar -->
+      <div class="cmd-bar" role="search">
+        <span class="cmd-prefix" aria-hidden="true">&#x276F;</span>
+        <input
+          type="text"
+          class="cmd-input"
+          id="cmdInput"
+          placeholder="Enter command... (e.g. deploy, spawn researcher, check status)"
+          aria-label="Quick command input"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="cmd-hint">ENTER to execute</span>
+        <button class="cmd-btn" id="cmdSend" aria-label="Execute command">EXECUTE</button>
+      </div>
+    </main>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   SUPER MONSTER ZERO — DASHBOARD RUNTIME
+═══════════════════════════════════════════════════════════ */
+
+// ── Data ────────────────────────────────────────────────────────────────────
+const SPECIALISTS = [
+  { name: 'ARCHITECT',    role: 'System design & planning',   model: 'claude-opus-4-6',    status: 'ready',   color: '#7b2fff' },
+  { name: 'RESEARCHER',   role: 'Web research & intel',       model: 'claude-sonnet-4-6',  status: 'ready',   color: '#00f0ff' },
+  { name: 'CODER',        role: 'Full-stack development',     model: 'deepseek-coder',     status: 'ready',   color: '#00ff88' },
+  { name: 'DATA ANALYST', role: 'Data & database ops',        model: 'claude-sonnet-4-6',  status: 'standby', color: '#ffcc00' },
+  { name: 'SCRAPER',      role: 'Web scraping & extraction',  model: 'claude-sonnet-4-6',  status: 'ready',   color: '#ff6644' },
+  { name: 'COMMUNICATOR', role: 'Reports & notifications',    model: 'claude-haiku-4-5',   status: 'ready',   color: '#00f0ff' },
+  { name: 'MEM KEEPER',   role: 'Knowledge management',       model: 'gemini-2.0-flash',   status: 'standby', color: '#aa44ff' },
+  { name: 'GH ENGINEER',  role: 'GitHub operations',          model: 'claude-sonnet-4-6',  status: 'ready',   color: '#00ff88' },
+];
+
+const MCP_SERVERS = [
+  { name: 'brave-search',  icon: 'search' },
+  { name: 'github',        icon: 'git' },
+  { name: 'filesystem',    icon: 'folder' },
+  { name: 'slack',         icon: 'message' },
+  { name: 'airtable',      icon: 'table' },
+  { name: 'firecrawl',     icon: 'spider' },
+  { name: 'sqlite',        icon: 'database' },
+  { name: 'context7',      icon: 'book' },
+  { name: 'websearch-exa', icon: 'globe' },
+  { name: 'grep-app',      icon: 'code' },
+  { name: 'puppeteer',     icon: 'browser' },
+  { name: 'postgres',      icon: 'database' },
+  { name: 'memory',        icon: 'brain' },
+  { name: 'seq-thinking',  icon: 'flow' },
+  { name: 'fetch',         icon: 'download' },
+];
+
+// ── SVG Icon factory ─────────────────────────────────────────────────────────
+function icon(type, size = 14) {
+  const s = `width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"`;
+  const icons = {
+    search:   `<svg ${s}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+    git:      `<svg ${s}><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>`,
+    folder:   `<svg ${s}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
+    message:  `<svg ${s}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+    table:    `<svg ${s}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`,
+    spider:   `<svg ${s}><circle cx="12" cy="12" r="3"/><path d="M6.5 6.5l11 11"/><path d="M17.5 6.5l-11 11"/><path d="M2 12h4m12 0h4"/></svg>`,
+    database: `<svg ${s}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+    book:     `<svg ${s}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+    globe:    `<svg ${s}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+    code:     `<svg ${s}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+    browser:  `<svg ${s}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    brain:    `<svg ${s}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2z"/></svg>`,
+    flow:     `<svg ${s}><rect x="3" y="3" width="4" height="4"/><rect x="17" y="3" width="4" height="4"/><rect x="10" y="17" width="4" height="4"/><line x1="5" y1="7" x2="5" y2="12"/><line x1="19" y1="7" x2="19" y2="12"/><path d="M5 12h14M12 12v5"/></svg>`,
+    download: `<svg ${s}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  };
+  return icons[type] || icons.globe;
+}
+
+// ── Render army ──────────────────────────────────────────────────────────────
+function renderArmy(specialists) {
+  const grid = document.getElementById('armyGrid');
+  grid.innerHTML = specialists.map(s => `
+    <div class="agent-card" role="listitem" tabindex="0" aria-label="${s.name} specialist, status: ${s.status}">
+      <div class="agent-icon" style="background:${s.color}18;color:${s.color};border-color:${s.color}25">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+      </div>
+      <div class="agent-info">
+        <div class="agent-name">${s.name}</div>
+        <div class="agent-role">${s.role}</div>
+      </div>
+      <div class="agent-status ${s.status}" title="${s.status}" aria-label="${s.status}"></div>
+    </div>
+  `).join('');
+}
+
+// ── Render MCP ───────────────────────────────────────────────────────────────
+function renderMCP(servers) {
+  const grid = document.getElementById('mcpGrid');
+  grid.innerHTML = servers.map(s => `
+    <div class="mcp-chip" tabindex="0" role="button" aria-label="MCP server: ${s.name}">
+      <div class="mcp-chip-icon">${icon(s.icon, 13)}</div>
+      <span class="mcp-chip-name">${s.name}</span>
+    </div>
+  `).join('');
+}
+
+// ── Activity log ─────────────────────────────────────────────────────────────
+let logEntries = [];
+
+function addLog(text, type = 'info') {
+  const now = new Date();
+  const time = now.toTimeString().slice(0, 8);
+  logEntries.unshift({ text, type, time });
+  if (logEntries.length > 40) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('activityLog');
+  el.innerHTML = logEntries.map(e => `
+    <div class="log-entry">
+      <span class="log-time">${e.time}</span>
+      <div class="log-indicator ${e.type}" aria-hidden="true"></div>
+      <span class="log-text">${e.text}</span>
+    </div>
+  `).join('') || '<div class="log-entry"><span class="log-text" style="color:var(--text-3)">No activity yet...</span></div>';
+}
+
+// ── Fetch status ─────────────────────────────────────────────────────────────
+let startTime = Date.now();
+
+async function fetchStatus() {
+  try {
+    const res = await fetch('/api/status');
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+
+    // Uptime
+    const up = data.uptime_seconds || 0;
+    const h = String(Math.floor(up / 3600)).padStart(2, '0');
+    const m = String(Math.floor((up % 3600) / 60)).padStart(2, '0');
+    const s = String(up % 60).padStart(2, '0');
+    const upStr = `${h}:${m}:${s}`;
+    document.getElementById('uptimeStat').textContent = upStr;
+    document.getElementById('uptimeDisplay').textContent = upStr;
+
+    // Agent Zero online state
+    const a0Online = data.agent_zero?.online;
+    document.getElementById('a0Bar').style.width = a0Online ? '100%' : '15%';
+    document.getElementById('a0Val').textContent = a0Online ? 'UP' : 'OFF';
+    document.getElementById('a0Val').style.color = a0Online ? 'var(--green)' : 'var(--red)';
+
+    // System status
+    const dot = document.getElementById('sysStatusDot');
+    const txt = document.getElementById('sysStatusText');
+    dot.className = 'pulse-dot';
+    txt.textContent = 'SYSTEM ONLINE';
+
+    // Active agents
+    const specialists = SPECIALISTS.filter(s => s.status === 'ready').length;
+    document.getElementById('activeAgents').textContent = specialists;
+
+    addLog(`Status refreshed — Agent Zero: <strong>${a0Online ? 'online' : 'offline'}</strong>`, a0Online ? 'success' : 'warn');
+  } catch (e) {
+    document.getElementById('sysStatusDot').className = 'pulse-dot yellow';
+    document.getElementById('sysStatusText').textContent = 'AGENT ZERO OFFLINE';
+    document.getElementById('activeAgents').textContent = '0';
+    addLog(`Status check failed: ${e.message}`, 'warn');
+  }
+}
+
+async function fetchArmy() {
+  try {
+    const res = await fetch('/api/army');
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    document.getElementById('mcpServers').textContent = data.mcp_servers || 15;
+    document.getElementById('mcpLabel').textContent = `${data.mcp_servers || 15} SERVERS`;
+    document.getElementById('mcpCount').textContent = data.mcp_servers || 15;
+    addLog(`Army manifest loaded — <strong>${data.specialists.length}</strong> specialists ready`, 'success');
+  } catch (e) {
+    addLog(`Army fetch failed: ${e.message}`, 'warn');
+  }
+}
+
+// ── Fake memory count (demo) ─────────────────────────────────────────────────
+function updateMemory() {
+  const count = Math.floor(120 + Math.random() * 40);
+  document.getElementById('memoryItems').textContent = count;
+  document.getElementById('memCount').textContent = count;
+}
+
+// ── Fake system metrics ──────────────────────────────────────────────────────
+function updateSysMetrics() {
+  const cpu = Math.floor(15 + Math.random() * 30);
+  const mem = Math.floor(35 + Math.random() * 25);
+  document.getElementById('cpuBar').style.width = cpu + '%';
+  document.getElementById('cpuVal').textContent = cpu + '%';
+  document.getElementById('memBar').style.width = mem + '%';
+  document.getElementById('memVal').textContent = mem + '%';
+}
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const up = Math.floor((Date.now() - startTime) / 1000);
+  const h = String(Math.floor(up / 3600)).padStart(2, '0');
+  const m = String(Math.floor((up % 3600) / 60)).padStart(2, '0');
+  const s = String(up % 60).padStart(2, '0');
+  document.getElementById('uptimeDisplay').textContent = `${h}:${m}:${s}`;
+  document.getElementById('dateDisplay').textContent =
+    now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' }) +
+    ' — ' + now.toLocaleTimeString('en-US', { hour12: false });
+}
+
+// ── Command execution ────────────────────────────────────────────────────────
+const COMMANDS = {
+  status:    () => { fetchStatus(); addLog('Manual status check triggered', 'info'); },
+  refresh:   () => { initDashboard(); addLog('Dashboard refreshed', 'info'); },
+  clear:     () => { logEntries = []; renderLog(); },
+  help:      () => addLog('Commands: <strong>status, refresh, clear, help, deploy</strong>', 'info'),
+  deploy:    () => addLog('Deploy initiated — connect Agent Zero for execution', 'warn'),
+};
+
+function execCommand(raw) {
+  const cmd = raw.trim().toLowerCase().split(/\s+/)[0];
+  if (COMMANDS[cmd]) {
+    COMMANDS[cmd]();
+  } else if (raw.trim()) {
+    addLog(`Command: <strong>${raw}</strong> — forwarding to Agent Zero...`, 'info');
+    window.open('/agent', '_blank');
+  }
+}
+
+// ── Event listeners ──────────────────────────────────────────────────────────
+document.getElementById('cmdInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    execCommand(e.target.value);
+    e.target.value = '';
+  }
+});
+
+document.getElementById('cmdSend').addEventListener('click', () => {
+  const inp = document.getElementById('cmdInput');
+  execCommand(inp.value);
+  inp.value = '';
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  initDashboard();
+  addLog('Manual refresh', 'info');
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+});
+
+document.getElementById('clearLogBtn').addEventListener('click', () => {
+  logEntries = [];
+  renderLog();
+});
+
+document.getElementById('deployBtn').addEventListener('click', () => {
+  addLog('Quick Deploy triggered — opening Agent Zero...', 'info');
+  window.open('/agent', '_blank');
+});
+
+// Sidebar nav switching (highlight only)
+document.querySelectorAll('[data-view]').forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+async function initDashboard() {
+  renderArmy(SPECIALISTS);
+  renderMCP(MCP_SERVERS);
+  updateMemory();
+  updateSysMetrics();
+  await Promise.allSettled([fetchStatus(), fetchArmy()]);
+}
+
+// Boot sequence
+addLog('Super Monster Zero Command Center <strong>initializing...</strong>', 'info');
+initDashboard().then(() => {
+  addLog('All systems <strong>nominal</strong> — Supreme Commander standing by', 'success');
+  addLog(`MCP Army <strong>${MCP_SERVERS.length} servers</strong> configured`, 'info');
+  addLog('GOTCHA framework <strong>active</strong> — 8 specialists on standby', 'success');
+});
+
+// Intervals
+setInterval(updateClock, 1000);
+setInterval(updateSysMetrics, 5000);
+setInterval(fetchStatus, 30000);
+setInterval(updateMemory, 15000);
+</script>
+</body>
+</html>
